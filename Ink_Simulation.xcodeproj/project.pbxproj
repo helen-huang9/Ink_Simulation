@@ -11,6 +11,8 @@
 		BF5823FF29FF18B600D5CD05 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF5823FE29FF18B600D5CD05 /* ContentView.swift */; };
 		BF58240129FF18B700D5CD05 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF58240029FF18B700D5CD05 /* Assets.xcassets */; };
 		BF58240429FF18B700D5CD05 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF58240329FF18B700D5CD05 /* Preview Assets.xcassets */; };
+		BF58240C29FF1A8500D5CD05 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF58240B29FF1A8500D5CD05 /* Renderer.swift */; };
+		BF58240E29FF205700D5CD05 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = BF58240D29FF205700D5CD05 /* Shaders.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +22,9 @@
 		BF58240029FF18B700D5CD05 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF58240329FF18B700D5CD05 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		BF58240529FF18B700D5CD05 /* Ink_Simulation.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ink_Simulation.entitlements; sourceTree = "<group>"; };
+		BF58240B29FF1A8500D5CD05 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		BF58240D29FF205700D5CD05 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		BF58240F29FF23B400D5CD05 /* Types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Types.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +59,9 @@
 			children = (
 				BF5823FC29FF18B600D5CD05 /* Ink_SimulationApp.swift */,
 				BF5823FE29FF18B600D5CD05 /* ContentView.swift */,
+				BF58240B29FF1A8500D5CD05 /* Renderer.swift */,
+				BF58240F29FF23B400D5CD05 /* Types.h */,
+				BF58240D29FF205700D5CD05 /* Shaders.metal */,
 				BF58240029FF18B700D5CD05 /* Assets.xcassets */,
 				BF58240529FF18B700D5CD05 /* Ink_Simulation.entitlements */,
 				BF58240229FF18B700D5CD05 /* Preview Content */,
@@ -139,7 +147,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF58240E29FF205700D5CD05 /* Shaders.metal in Sources */,
 				BF5823FF29FF18B600D5CD05 /* ContentView.swift in Sources */,
+				BF58240C29FF1A8500D5CD05 /* Renderer.swift in Sources */,
 				BF5823FD29FF18B600D5CD05 /* Ink_SimulationApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -283,6 +293,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "helenhuang.Ink-Simulation";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = Ink_Simulation/Types.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -310,6 +321,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "helenhuang.Ink-Simulation";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = Ink_Simulation/Types.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
