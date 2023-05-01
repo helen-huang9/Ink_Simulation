@@ -48,7 +48,7 @@ class Renderer: NSObject, MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        self.system.update()
+        self.system.update() // Don't see a separate update() function I could most this to...
         
         guard let drawable = view.currentDrawable else { return }
         

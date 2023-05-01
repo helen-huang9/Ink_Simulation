@@ -15,4 +15,17 @@ struct Particle {
     vector_float4 color;
 };
 
+struct Cell {
+    vector_float3 oldVelocity;
+    vector_float3 currVelocity;
+    
+    // TODO: Add BFECC fields
+    
+    vector_float3 curl;
+    
+    int forceApplied;
+    
+    // TODO: how to do neighbors?
+};
+
 #endif /* Types_h */

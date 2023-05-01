@@ -27,10 +27,10 @@
 		BF58240529FF18B700D5CD05 /* Ink_Simulation.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ink_Simulation.entitlements; sourceTree = "<group>"; };
 		BF58240B29FF1A8500D5CD05 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		BF58240D29FF205700D5CD05 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		BF58240F29FF23B400D5CD05 /* Types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Types.h; sourceTree = "<group>"; };
 		BF58241029FF308600D5CD05 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		BF58241229FF313000D5CD05 /* Camera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
 		BF58241429FF347900D5CD05 /* Transformations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transformations.swift; sourceTree = "<group>"; };
+		BF58241829FF485300D5CD05 /* Types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Types.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,8 +63,8 @@
 		BF5823FB29FF18B600D5CD05 /* Ink_Simulation */ = {
 			isa = PBXGroup;
 			children = (
-				BF58240F29FF23B400D5CD05 /* Types.h */,
 				BF5823FC29FF18B600D5CD05 /* Ink_SimulationApp.swift */,
+				BF58241829FF485300D5CD05 /* Types.h */,
 				BF5823FE29FF18B600D5CD05 /* ContentView.swift */,
 				BF58241229FF313000D5CD05 /* Camera.swift */,
 				BF58241029FF308600D5CD05 /* System.swift */,
