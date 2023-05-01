@@ -33,7 +33,6 @@ struct ContentView: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: MTKView, context: NSViewRepresentableContext<ContentView>) {
-        // TODO
     }
 }
 

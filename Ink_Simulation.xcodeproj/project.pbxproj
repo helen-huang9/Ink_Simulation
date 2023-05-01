@@ -13,6 +13,9 @@
 		BF58240429FF18B700D5CD05 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF58240329FF18B700D5CD05 /* Preview Assets.xcassets */; };
 		BF58240C29FF1A8500D5CD05 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF58240B29FF1A8500D5CD05 /* Renderer.swift */; };
 		BF58240E29FF205700D5CD05 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = BF58240D29FF205700D5CD05 /* Shaders.metal */; };
+		BF58241129FF308600D5CD05 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF58241029FF308600D5CD05 /* System.swift */; };
+		BF58241329FF313000D5CD05 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF58241229FF313000D5CD05 /* Camera.swift */; };
+		BF58241529FF347900D5CD05 /* Transformations.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF58241429FF347900D5CD05 /* Transformations.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +28,9 @@
 		BF58240B29FF1A8500D5CD05 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		BF58240D29FF205700D5CD05 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		BF58240F29FF23B400D5CD05 /* Types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Types.h; sourceTree = "<group>"; };
+		BF58241029FF308600D5CD05 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
+		BF58241229FF313000D5CD05 /* Camera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
+		BF58241429FF347900D5CD05 /* Transformations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transformations.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,10 +63,13 @@
 		BF5823FB29FF18B600D5CD05 /* Ink_Simulation */ = {
 			isa = PBXGroup;
 			children = (
+				BF58240F29FF23B400D5CD05 /* Types.h */,
 				BF5823FC29FF18B600D5CD05 /* Ink_SimulationApp.swift */,
 				BF5823FE29FF18B600D5CD05 /* ContentView.swift */,
+				BF58241229FF313000D5CD05 /* Camera.swift */,
+				BF58241029FF308600D5CD05 /* System.swift */,
+				BF58241429FF347900D5CD05 /* Transformations.swift */,
 				BF58240B29FF1A8500D5CD05 /* Renderer.swift */,
-				BF58240F29FF23B400D5CD05 /* Types.h */,
 				BF58240D29FF205700D5CD05 /* Shaders.metal */,
 				BF58240029FF18B700D5CD05 /* Assets.xcassets */,
 				BF58240529FF18B700D5CD05 /* Ink_Simulation.entitlements */,
@@ -147,9 +156,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF58241129FF308600D5CD05 /* System.swift in Sources */,
 				BF58240E29FF205700D5CD05 /* Shaders.metal in Sources */,
+				BF58241329FF313000D5CD05 /* Camera.swift in Sources */,
 				BF5823FF29FF18B600D5CD05 /* ContentView.swift in Sources */,
 				BF58240C29FF1A8500D5CD05 /* Renderer.swift in Sources */,
+				BF58241529FF347900D5CD05 /* Transformations.swift in Sources */,
 				BF5823FD29FF18B600D5CD05 /* Ink_SimulationApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

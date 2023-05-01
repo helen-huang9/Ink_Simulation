@@ -10,10 +10,11 @@ import MetalKit
 class Renderer: NSObject, MTKViewDelegate {
     
     var parent: ContentView
+    let system: System
+    
     var device: MTLDevice!
     var commandQueue: MTLCommandQueue!
     let renderPipeline: MTLRenderPipelineState
-    let vertexBuffer: MTLBuffer
     
     init(_ parent: ContentView) {
         // Get the GPU device and init a command queue
@@ -35,23 +36,20 @@ class Renderer: NSObject, MTKViewDelegate {
             fatalError()
         }
         
-        // Dummy data to fill vertex MTLBuffer
-        let particles = [
-            Particle(position: [-0.5, -0.5], color: [1, 0, 0, 1], size: 7),
-            Particle(position: [0.5, -0.5], color: [0, 1, 0, 1], size: 7),
-            Particle(position: [0, 0.5], color: [0, 0, 1, 1], size: 7),
-        ]
-        self.vertexBuffer = self.device.makeBuffer(bytes: particles, length: particles.count * MemoryLayout<Particle>.stride, options: [])!
+        // Init system
+        self.system = System()
         
         // Init parent
         super.init()
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        // TODO
+        
     }
     
     func draw(in view: MTKView) {
+        self.system.update()
+        
         guard let drawable = view.currentDrawable else { return }
         
         // Create command buffer
@@ -65,10 +63,21 @@ class Renderer: NSObject, MTKViewDelegate {
         // Create command encoder for command buffer
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDescriptor!)
         renderEncoder?.setRenderPipelineState(self.renderPipeline)
-        renderEncoder?.setVertexBuffer(self.vertexBuffer, offset: 0, index: 0)
-        renderEncoder?.drawPrimitives(type: .point, vertexStart: 0, vertexCount: 3)
         
-        // Finished encoding
+        // Set up Camera stuff
+        let viewMat: matrix_float4x4 = Matrix4x4.LookAt(eye: self.system.camera.position,
+                                                        target: self.system.camera.position + self.system.camera.look,
+                                                        up: self.system.camera.up)
+        let projMat: matrix_float4x4 = Matrix4x4.Perspective(fovy: 45, aspect: 800/600, near: 0.1, far: 20)
+        var viewProjMat = projMat * viewMat
+        renderEncoder?.setVertexBytes(&viewProjMat, length: MemoryLayout<matrix_float4x4>.stride, index: 1)
+        
+        // Add particles to vertex buffer
+        let vertexBuffer = self.device.makeBuffer(bytes: self.system.particles, length: self.system.particles.count * MemoryLayout<Particle>.stride, options: [])!
+        renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        renderEncoder?.drawPrimitives(type: .point, vertexStart: 0, vertexCount: self.system.particles.count)
+        
+        // Finish encoding for command buffer
         renderEncoder?.endEncoding()
         commandBuffer?.present(drawable)
         commandBuffer?.commit()

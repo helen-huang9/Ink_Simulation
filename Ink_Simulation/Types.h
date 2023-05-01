@@ -11,9 +11,8 @@
 #include <simd/simd.h>
 
 struct Particle {
-    vector_float2 position;
+    vector_float3 position;
     vector_float4 color;
-    float size;
 };
 
 #endif /* Types_h */

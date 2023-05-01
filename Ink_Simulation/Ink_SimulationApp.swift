@@ -11,7 +11,7 @@ import SwiftUI
 struct Ink_SimulationApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView().frame(width: 800, height: 600)
         }
     }
 }
