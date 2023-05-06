@@ -10,9 +10,15 @@
 
 using namespace metal;
 
-constant int WATERGRID_X = 8;
-constant int WATERGRID_Y = 8;
-constant int WATERGRID_Z = 8;
+constant int WATERGRID_X = 15;
+constant int WATERGRID_Y = 15;
+constant int WATERGRID_Z = 15;
+
+struct Fragment {
+    float4 position [[ position ]];
+    float4 color;
+    float size [[ point_size ]];
+};
 
 int get1DIndexFrom3DIndex(int i, int j, int k) {
     return i + WATERGRID_X * (j + WATERGRID_Y * j);
@@ -25,16 +31,12 @@ bool isInBounds(int i, int j, int k) {
     return inXRange && inYRange && inZRange;
 }
 
-struct Fragment {
-    float4 position [[ position ]];
-    float4 color;
-    float size [[ point_size ]];
-};
-
 /// Updates the watergrid
 kernel void updateWaterGrid(device Cell* waterGrid [[ buffer(2) ]],
                             uint3 index [[ thread_position_in_grid ]]) {
-    // TODO
+    // TODO: pass in timestep
+    
+    
 }
 
 /// Updates the particle positions
@@ -51,9 +53,10 @@ kernel void updateParticles(device Particle* particleArray [[ buffer(0) ]],
     
     // Update the particle if its in bounds
     if (isInBounds(i, j, k)) {
+        // TODO: Change to use Midpoint Method
         int cellIndex = get1DIndexFrom3DIndex(i, j, k);
         vector_float3 v = waterGrid[cellIndex].currVelocity;
-        p.position += v;
+        p.position += 0.01 * v; // TODO: currently hardcoding particle timestep
         particleArray[index] = p;
     }
 }
@@ -68,7 +71,7 @@ vertex Fragment vertexShader(const device Particle* particleArray [[ buffer(0) ]
     Fragment output;
     output.position = viewProj * float4(input.position.x, input.position.y, input.position.z, 1);
     output.color = input.color;
-    output.size = 7;
+    output.size = 1;
     
     return output;
 }
