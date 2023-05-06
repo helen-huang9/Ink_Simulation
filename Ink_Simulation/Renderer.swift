@@ -93,6 +93,7 @@ class Renderer: NSObject, MTKViewDelegate {
         // Update Particles
         computeEncoder?.setComputePipelineState(self.computeParticlePipeline)
         computeEncoder?.setBuffer(self.particleBuffer, offset: 0, index: 0)
+        computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
         threadsPerGrid = MTLSize(width: self.system.particles.count, height: 1, depth: 1)
         maxThreadsPerThreadGroup = self.computeParticlePipeline.maxTotalThreadsPerThreadgroup
         threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
@@ -117,7 +118,7 @@ class Renderer: NSObject, MTKViewDelegate {
         let viewMat: matrix_float4x4 = Matrix4x4.LookAt(eye: self.system.camera.position,
                                                         target: self.system.camera.position + self.system.camera.look,
                                                         up: self.system.camera.up)
-        let projMat: matrix_float4x4 = Matrix4x4.Perspective(fovy: 45, aspect: 800/600, near: 0.1, far: 20)
+        let projMat: matrix_float4x4 = Matrix4x4.Perspective(fovy: 45, aspect: 800/600, near: 0.1, far: 100)
         var viewProjMat = projMat * viewMat
         renderEncoder?.setVertexBytes(&viewProjMat, length: MemoryLayout<matrix_float4x4>.stride, index: 1)
         

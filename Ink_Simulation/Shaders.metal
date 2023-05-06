@@ -10,6 +10,21 @@
 
 using namespace metal;
 
+constant int WATERGRID_X = 8;
+constant int WATERGRID_Y = 8;
+constant int WATERGRID_Z = 8;
+
+int get1DIndexFrom3DIndex(int i, int j, int k) {
+    return i + WATERGRID_X * (j + WATERGRID_Y * j);
+}
+
+bool isInBounds(int i, int j, int k) {
+    bool inXRange = i >= 0 && i < WATERGRID_X;
+    bool inYRange = j >= 0 && j < WATERGRID_Y;
+    bool inZRange = k >= 0 && k < WATERGRID_Z;
+    return inXRange && inYRange && inZRange;
+}
+
 struct Fragment {
     float4 position [[ position ]];
     float4 color;
@@ -24,10 +39,23 @@ kernel void updateWaterGrid(device Cell* waterGrid [[ buffer(2) ]],
 
 /// Updates the particle positions
 kernel void updateParticles(device Particle* particleArray [[ buffer(0) ]],
+                            const device Cell* waterGrid [[ buffer(2) ]],
                             uint index [[ thread_position_in_grid ]]) {
+    // Get the particle
     Particle p = particleArray[index];
-    p.position.y -= 0.01;
-    particleArray[index] = p;
+    
+    // Get the cell the particle is in
+    int i = p.position.x;
+    int j = p.position.y;
+    int k = p.position.z;
+    
+    // Update the particle if its in bounds
+    if (isInBounds(i, j, k)) {
+        int cellIndex = get1DIndexFrom3DIndex(i, j, k);
+        vector_float3 v = waterGrid[cellIndex].currVelocity;
+        p.position += v;
+        particleArray[index] = p;
+    }
 }
 
 /// Vertex shader
