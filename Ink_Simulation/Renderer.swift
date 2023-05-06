@@ -11,10 +11,12 @@ class Renderer: NSObject, MTKViewDelegate {
     
     var parent: ContentView
     let system: System
+    var particleBuffer: MTLBuffer!
     
     var device: MTLDevice!
     var commandQueue: MTLCommandQueue!
     let renderPipeline: MTLRenderPipelineState
+    let computePipeline: MTLComputePipelineState
     
     init(_ parent: ContentView) {
         // Get the GPU device and init a command queue
@@ -24,20 +26,32 @@ class Renderer: NSObject, MTKViewDelegate {
         }
         self.commandQueue = self.device.makeCommandQueue()
         
-        // Set up the Render pipeline and MTLLibrary
-        let pipeDescriptor = MTLRenderPipelineDescriptor()
+        // Create the MTL library
         let library = self.device.makeDefaultLibrary()
-        pipeDescriptor.vertexFunction = library?.makeFunction(name: "vertexShader")
-        pipeDescriptor.fragmentFunction = library?.makeFunction(name: "fragmentShader")
-        pipeDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        
+        // Set up the Compute pipelines
+        let computePipeDescriptor = MTLComputePipelineDescriptor()
+        computePipeDescriptor.computeFunction = library?.makeFunction(name: "updateParticles")
         do {
-            try self.renderPipeline = self.device.makeRenderPipelineState(descriptor: pipeDescriptor)
+            try self.computePipeline = self.device.makeComputePipelineState(descriptor: computePipeDescriptor, options: [], reflection: nil)
         } catch {
             fatalError()
         }
         
-        // Init system
+        // Set up the Render pipeline
+        let renderPipeDescriptor = MTLRenderPipelineDescriptor()
+        renderPipeDescriptor.vertexFunction = library?.makeFunction(name: "vertexShader")
+        renderPipeDescriptor.fragmentFunction = library?.makeFunction(name: "fragmentShader")
+        renderPipeDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        do {
+            try self.renderPipeline = self.device.makeRenderPipelineState(descriptor: renderPipeDescriptor)
+        } catch {
+            fatalError()
+        }
+        
+        // Init system and create the particle buffer
         self.system = System()
+        self.particleBuffer = self.device.makeBuffer(bytes: self.system.particles, length: self.system.particles.count * MemoryLayout<Particle>.stride, options: .storageModeShared)!
         
         // Init parent
         super.init()
@@ -55,6 +69,17 @@ class Renderer: NSObject, MTKViewDelegate {
         // Create command buffer
         let commandBuffer = self.commandQueue.makeCommandBuffer()
         
+        // TODO: Compute stuff
+        let computeEncoder = commandBuffer?.makeComputeCommandEncoder()
+        computeEncoder?.setComputePipelineState(self.computePipeline)
+        computeEncoder?.setBuffer(self.particleBuffer, offset: 0, index: 0)
+        let threadsPerGrid = MTLSize(width: self.system.particles.count, height: 1, depth: 1)
+        let maxThreadsPerThreadGroup = self.computePipeline.maxTotalThreadsPerThreadgroup
+        let threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
+        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        computeEncoder?.endEncoding()
+        
+        // Set up renderPassDescriptor stuff for rendering
         let renderPassDescriptor = view.currentRenderPassDescriptor
         renderPassDescriptor?.colorAttachments[0].clearColor = MTLClearColorMake(1, 1, 1, 1)
         renderPassDescriptor?.colorAttachments[0].loadAction = .clear
@@ -72,9 +97,8 @@ class Renderer: NSObject, MTKViewDelegate {
         var viewProjMat = projMat * viewMat
         renderEncoder?.setVertexBytes(&viewProjMat, length: MemoryLayout<matrix_float4x4>.stride, index: 1)
         
-        // Add particles to vertex buffer
-        let vertexBuffer = self.device.makeBuffer(bytes: self.system.particles, length: self.system.particles.count * MemoryLayout<Particle>.stride, options: [])!
-        renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        // Add particles to particle buffer
+        renderEncoder?.setVertexBuffer(self.particleBuffer, offset: 0, index: 0)
         renderEncoder?.drawPrimitives(type: .point, vertexStart: 0, vertexCount: self.system.particles.count)
         
         // Finish encoding for command buffer

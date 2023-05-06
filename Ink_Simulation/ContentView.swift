@@ -21,6 +21,7 @@ struct ContentView: NSViewRepresentable {
         mtkView.delegate = context.coordinator // What's responsible for rendering the MTKView
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
+        mtkView.isPaused = false
         
         if let metalDevice = MTLCreateSystemDefaultDevice() { // Set the GPU device of the view
             mtkView.device = metalDevice
