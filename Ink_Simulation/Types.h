@@ -19,6 +19,7 @@ struct Cell {
     vector_float3 oldVelocity;
     vector_float3 currVelocity;
     vector_float3 curl;
+    int forceWasApplied;
 };
 
 #endif /* Types_h */

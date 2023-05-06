@@ -114,8 +114,13 @@ class Renderer: NSObject, MTKViewDelegate {
         
         // Apply External Forces
         computeEncoder?.setComputePipelineState(self.computeExternalForcesPipeline)
+        computeEncoder?.setBuffer(self.particleBuffer, offset: 0, index: 0)
         computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
-        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        let tmpThreadsPerGrid = MTLSize(width: self.system.particles.count, height: 1, depth: 1)
+        let tmpMaxThreadsPerThreadGroup = self.computeExternalForcesPipeline.maxTotalThreadsPerThreadgroup
+        let tmpThreadsPerThreadGroup = MTLSize(width: tmpMaxThreadsPerThreadGroup, height: 1, depth: 1)
+        computeEncoder?.dispatchThreads(tmpThreadsPerGrid, threadsPerThreadgroup: tmpThreadsPerThreadGroup)
+//        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
         
         // Apply Viscosity
         computeEncoder?.setComputePipelineState(self.computeViscosityPipeline)

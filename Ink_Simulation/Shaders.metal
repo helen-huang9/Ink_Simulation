@@ -14,6 +14,7 @@ constant int WATERGRID_X = 15;
 constant int WATERGRID_Y = 15;
 constant int WATERGRID_Z = 15;
 constant float TIMESTEP = 0.01;
+constant vector_float3 GRAVITY = vector_float3(0, -10, 0);
 
 struct Fragment {
     float4 position [[ position ]];
@@ -136,19 +137,83 @@ kernel void applyConvection(device Cell* waterGrid [[ buffer(2) ]],
     // TODO: Calculate curl
 }
 
-kernel void applyExternalForces(device Cell* waterGrid [[ buffer(2) ]],
-                                uint3 tid [[ thread_position_in_grid ]]) {
-    if (!isInBounds(tid[0], tid[1], tid[2])) { return; }
-    int cellIndex = get1DIndexFrom3DIndex(tid[0], tid[1], tid[2]);
+kernel void applyExternalForces(const device Particle* particles [[ buffer(0) ]],
+                                device Cell* waterGrid [[ buffer(2) ]],
+                                uint tid [[ thread_position_in_grid ]]) {
+    Particle p = particles[tid];
+    int i = p.position[0];
+    int j = p.position[1];
+    int k = p.position[2];
     
-    // TODO: Add external forces term
-//    waterGrid[cellIndex].currVelocity[1] = -1;
+    // Update center
+    int index = get1DIndexFrom3DIndex(i, j, k);
+    if (waterGrid[index].forceWasApplied == 0) {
+        waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+        waterGrid[index].forceWasApplied = 1;
+    }
+    
+    // Update up
+    if (isInBounds(i, j + 1, k)) {
+        index = get1DIndexFrom3DIndex(i, j + 1, k);
+        if (waterGrid[index].forceWasApplied == 0) {
+            waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+            waterGrid[index].forceWasApplied = 1;
+        }
+    }
+    
+    // Update down
+    if (isInBounds(i, j - 1, k)) {
+        index = get1DIndexFrom3DIndex(i, j - 1, k);
+        if (waterGrid[index].forceWasApplied == 0) {
+            waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+            waterGrid[index].forceWasApplied = 1;
+        }
+    }
+    
+    // Update left
+    if (isInBounds(i - 1, j, k)) {
+        index = get1DIndexFrom3DIndex(i - 1, j, k);
+        if (waterGrid[index].forceWasApplied == 0) {
+            waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+            waterGrid[index].forceWasApplied = 1;
+        }
+    }
+    
+    // Update right
+    if (isInBounds(i + 1, j, k)) {
+        index = get1DIndexFrom3DIndex(i + 1, j, k);
+        if (waterGrid[index].forceWasApplied == 0) {
+            waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+            waterGrid[index].forceWasApplied = 1;
+        }
+    }
+    
+    // Update forward
+    if (isInBounds(i, j, k + 1)) {
+        index = get1DIndexFrom3DIndex(i, j, k + 1);
+        if (waterGrid[index].forceWasApplied == 0) {
+            waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+            waterGrid[index].forceWasApplied = 1;
+        }
+    }
+    
+    // Update backward
+    if (isInBounds(i, j, k - 1)) {
+        index = get1DIndexFrom3DIndex(i, j, k - 1);
+        if (waterGrid[index].forceWasApplied == 0) {
+            waterGrid[index].currVelocity += TIMESTEP * GRAVITY;
+            waterGrid[index].forceWasApplied = 1;
+        }
+    }
 }
 
 kernel void applyViscosity(device Cell* waterGrid [[ buffer(2) ]],
                            uint3 tid [[ thread_position_in_grid ]]) {
     if (!isInBounds(tid[0], tid[1], tid[2])) { return; }
     int cellIndex = get1DIndexFrom3DIndex(tid[0], tid[1], tid[2]);
+    
+    // Reset forceWasApplied term from previous applyExternalForces() call
+    waterGrid[cellIndex].forceWasApplied = 0;
     
     // TODO: Add viscosity term
 //    waterGrid[cellIndex].currVelocity[1] = -1;
@@ -160,7 +225,10 @@ kernel void applyVorticityConfinement(device Cell* waterGrid [[ buffer(2) ]],
     int cellIndex = get1DIndexFrom3DIndex(tid[0], tid[1], tid[2]);
     
     // TODO: Add vorticity confinement term
-//    waterGrid[cellIndex].currVelocity[1] = -1;
+    
+    
+    // Make oldVelocity be currVelocity
+    waterGrid[cellIndex].oldVelocity = waterGrid[cellIndex].currVelocity;
 }
 
 
