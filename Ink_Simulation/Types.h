@@ -16,7 +16,9 @@ struct Particle {
 };
 
 struct Cell {
+    vector_float3 oldVelocity;
     vector_float3 currVelocity;
+    vector_float3 curl;
 };
 
 #endif /* Types_h */

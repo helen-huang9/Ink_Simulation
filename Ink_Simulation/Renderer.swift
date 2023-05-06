@@ -12,11 +12,13 @@ class Renderer: NSObject, MTKViewDelegate {
     var parent: ContentView
     let system: System
     var particleBuffer: MTLBuffer!
+    var waterGridBuffer: MTLBuffer!
     
     var device: MTLDevice!
     var commandQueue: MTLCommandQueue!
     let renderPipeline: MTLRenderPipelineState
-    let computePipeline: MTLComputePipelineState
+    let computeParticlePipeline: MTLComputePipelineState
+    let computeWaterGridPipeline: MTLComputePipelineState
     
     init(_ parent: ContentView) {
         // Get the GPU device and init a command queue
@@ -30,10 +32,15 @@ class Renderer: NSObject, MTKViewDelegate {
         let library = self.device.makeDefaultLibrary()
         
         // Set up the Compute pipelines
-        let computePipeDescriptor = MTLComputePipelineDescriptor()
-        computePipeDescriptor.computeFunction = library?.makeFunction(name: "updateParticles")
+        let updateParticlesFunc = library?.makeFunction(name: "updateParticles")
         do {
-            try self.computePipeline = self.device.makeComputePipelineState(descriptor: computePipeDescriptor, options: [], reflection: nil)
+            try self.computeParticlePipeline = self.device.makeComputePipelineState(function: updateParticlesFunc!, options: [], reflection: nil)
+        } catch {
+            fatalError()
+        }
+        let updateWaterGridFunc = library?.makeFunction(name: "updateWaterGrid")
+        do {
+            try self.computeWaterGridPipeline = self.device.makeComputePipelineState(function: updateWaterGridFunc!, options: [], reflection: nil)
         } catch {
             fatalError()
         }
@@ -49,9 +56,10 @@ class Renderer: NSObject, MTKViewDelegate {
             fatalError()
         }
         
-        // Init system and create the particle buffer
+        // Init system, create the particle buffer, and create the water buffer
         self.system = System()
         self.particleBuffer = self.device.makeBuffer(bytes: self.system.particles, length: self.system.particles.count * MemoryLayout<Particle>.stride, options: .storageModeShared)!
+        self.waterGridBuffer = self.device.makeBuffer(bytes: self.system.waterGrid, length: self.system.waterGrid.count * MemoryLayout<Cell>.stride, options: .storageModeShared)!
         
         // Init parent
         super.init()
@@ -69,15 +77,31 @@ class Renderer: NSObject, MTKViewDelegate {
         // Create command buffer
         let commandBuffer = self.commandQueue.makeCommandBuffer()
         
-        // TODO: Compute stuff
+        // =================== COMPUTE PIPELINE ===================
+        
+        // Create command encoder for computations
         let computeEncoder = commandBuffer?.makeComputeCommandEncoder()
-        computeEncoder?.setComputePipelineState(self.computePipeline)
-        computeEncoder?.setBuffer(self.particleBuffer, offset: 0, index: 0)
-        let threadsPerGrid = MTLSize(width: self.system.particles.count, height: 1, depth: 1)
-        let maxThreadsPerThreadGroup = self.computePipeline.maxTotalThreadsPerThreadgroup
-        let threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
+        
+        // Update Water Grid
+        computeEncoder?.setComputePipelineState(self.computeWaterGridPipeline)
+        computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
+        var threadsPerGrid = MTLSize(width: self.system.waterGrid.count, height: 1, depth: 1)
+        var maxThreadsPerThreadGroup = self.computeWaterGridPipeline.maxTotalThreadsPerThreadgroup
+        var threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
         computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        
+        // Update Particles
+        computeEncoder?.setComputePipelineState(self.computeParticlePipeline)
+        computeEncoder?.setBuffer(self.particleBuffer, offset: 0, index: 0)
+        threadsPerGrid = MTLSize(width: self.system.particles.count, height: 1, depth: 1)
+        maxThreadsPerThreadGroup = self.computeParticlePipeline.maxTotalThreadsPerThreadgroup
+        threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
+        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        
+        // Finished encoding
         computeEncoder?.endEncoding()
+        
+        // ===================== RENDER PIPELINE =====================
         
         // Set up renderPassDescriptor stuff for rendering
         let renderPassDescriptor = view.currentRenderPassDescriptor
@@ -85,7 +109,7 @@ class Renderer: NSObject, MTKViewDelegate {
         renderPassDescriptor?.colorAttachments[0].loadAction = .clear
         renderPassDescriptor?.colorAttachments[0].storeAction = .store
         
-        // Create command encoder for command buffer
+        // Create command encoder for rendering
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDescriptor!)
         renderEncoder?.setRenderPipelineState(self.renderPipeline)
         
@@ -101,9 +125,13 @@ class Renderer: NSObject, MTKViewDelegate {
         renderEncoder?.setVertexBuffer(self.particleBuffer, offset: 0, index: 0)
         renderEncoder?.drawPrimitives(type: .point, vertexStart: 0, vertexCount: self.system.particles.count)
         
-        // Finish encoding for command buffer
+        // Finished encoding
         renderEncoder?.endEncoding()
         commandBuffer?.present(drawable)
+        
+        // ===========================================================
+        
+        // Done with encoding everything; commit command buffer
         commandBuffer?.commit()
     }
     
