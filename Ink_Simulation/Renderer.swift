@@ -9,16 +9,26 @@ import MetalKit
 
 class Renderer: NSObject, MTKViewDelegate {
     
+    // Data
     var parent: ContentView
     let system: System
     var particleBuffer: MTLBuffer!
     var waterGridBuffer: MTLBuffer!
     
+    // GPU
     var device: MTLDevice!
     var commandQueue: MTLCommandQueue!
-    let renderPipeline: MTLRenderPipelineState
+        
+    // Compute Pipelines
+    let computeConvectionPipeline: MTLComputePipelineState
+    let computeExternalForcesPipeline: MTLComputePipelineState
+    let computeViscosityPipeline: MTLComputePipelineState
+    let computeVorticityConfinementPipeline: MTLComputePipelineState
+    
     let computeParticlePipeline: MTLComputePipelineState
-    let computeWaterGridPipeline: MTLComputePipelineState
+    
+    // Render Pipeline
+    let renderPipeline: MTLRenderPipelineState
     
     init(_ parent: ContentView) {
         // Get the GPU device and init a command queue
@@ -32,15 +42,28 @@ class Renderer: NSObject, MTKViewDelegate {
         let library = self.device.makeDefaultLibrary()
         
         // Set up the Compute pipelines
-        let updateParticlesFunc = library?.makeFunction(name: "updateParticles")
         do {
-            try self.computeParticlePipeline = self.device.makeComputePipelineState(function: updateParticlesFunc!, options: [], reflection: nil)
+            // Convection
+            let applyConvectionFunc = library?.makeFunction(name: "applyConvection")
+            try self.computeConvectionPipeline = self.device.makeComputePipelineState(function: applyConvectionFunc!, options: [], reflection: nil)
+            
+            // External Forces
+            let applyExternalForcesFunc = library?.makeFunction(name: "applyExternalForces")
+            try self.computeExternalForcesPipeline = self.device.makeComputePipelineState(function: applyExternalForcesFunc!, options: [], reflection: nil)
+            
+            // Viscosity
+            let applyViscosityFunc = library?.makeFunction(name: "applyViscosity")
+            try self.computeViscosityPipeline = self.device.makeComputePipelineState(function: applyViscosityFunc!, options: [], reflection: nil)
+            
+            // Vorticity Confinement
+            let applyVorticityConfinementFunc = library?.makeFunction(name: "applyVorticityConfinement")
+            try self.computeVorticityConfinementPipeline = self.device.makeComputePipelineState(function: applyVorticityConfinementFunc!, options: [], reflection: nil)
         } catch {
             fatalError()
         }
-        let updateWaterGridFunc = library?.makeFunction(name: "updateWaterGrid")
         do {
-            try self.computeWaterGridPipeline = self.device.makeComputePipelineState(function: updateWaterGridFunc!, options: [], reflection: nil)
+            let updateParticlesFunc = library?.makeFunction(name: "updateParticles")
+            try self.computeParticlePipeline = self.device.makeComputePipelineState(function: updateParticlesFunc!, options: [], reflection: nil)
         } catch {
             fatalError()
         }
@@ -82,12 +105,26 @@ class Renderer: NSObject, MTKViewDelegate {
         // Create command encoder for computations
         let computeEncoder = commandBuffer?.makeComputeCommandEncoder()
         
-        // Update Water Grid
-        computeEncoder?.setComputePipelineState(self.computeWaterGridPipeline)
+        // Apply Convection
+        computeEncoder?.setComputePipelineState(self.computeConvectionPipeline)
         computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
-        var threadsPerGrid = MTLSize(width: self.system.waterGrid.count, height: 1, depth: 1)
-        var maxThreadsPerThreadGroup = self.computeWaterGridPipeline.maxTotalThreadsPerThreadgroup
-        var threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
+        var threadsPerGrid = MTLSize(width: WATERGRID_X, height: WATERGRID_Y, depth: WATERGRID_Z)
+        var threadsPerThreadGroup = MTLSize(width: 10, height: 10, depth: 10)
+        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        
+        // Apply External Forces
+        computeEncoder?.setComputePipelineState(self.computeExternalForcesPipeline)
+        computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
+        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        
+        // Apply Viscosity
+        computeEncoder?.setComputePipelineState(self.computeViscosityPipeline)
+        computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
+        computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        
+        // Apply Vorticity Confinement
+        computeEncoder?.setComputePipelineState(self.computeVorticityConfinementPipeline)
+        computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
         computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
         
         // Update Particles
@@ -95,7 +132,7 @@ class Renderer: NSObject, MTKViewDelegate {
         computeEncoder?.setBuffer(self.particleBuffer, offset: 0, index: 0)
         computeEncoder?.setBuffer(self.waterGridBuffer, offset: 0, index: 2)
         threadsPerGrid = MTLSize(width: self.system.particles.count, height: 1, depth: 1)
-        maxThreadsPerThreadGroup = self.computeParticlePipeline.maxTotalThreadsPerThreadgroup
+        let maxThreadsPerThreadGroup = self.computeParticlePipeline.maxTotalThreadsPerThreadgroup
         threadsPerThreadGroup = MTLSize(width: maxThreadsPerThreadGroup, height: 1, depth: 1)
         computeEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
         
@@ -118,7 +155,7 @@ class Renderer: NSObject, MTKViewDelegate {
         let viewMat: matrix_float4x4 = Matrix4x4.LookAt(eye: self.system.camera.position,
                                                         target: self.system.camera.position + self.system.camera.look,
                                                         up: self.system.camera.up)
-        let projMat: matrix_float4x4 = Matrix4x4.Perspective(fovy: 45, aspect: 800/600, near: 0.1, far: 100)
+        let projMat: matrix_float4x4 = Matrix4x4.Perspective(fovy: 45, aspect: 800/600, near: 0.1, far: 50)
         var viewProjMat = projMat * viewMat
         renderEncoder?.setVertexBytes(&viewProjMat, length: MemoryLayout<matrix_float4x4>.stride, index: 1)
         

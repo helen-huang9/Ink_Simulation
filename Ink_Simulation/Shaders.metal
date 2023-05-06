@@ -31,13 +31,44 @@ bool isInBounds(int i, int j, int k) {
     return inXRange && inYRange && inZRange;
 }
 
-/// Updates the watergrid
-kernel void updateWaterGrid(device Cell* waterGrid [[ buffer(2) ]],
+
+kernel void applyConvection(device Cell* waterGrid [[ buffer(2) ]],
                             uint3 index [[ thread_position_in_grid ]]) {
-    // TODO: pass in timestep
+    if (!isInBounds(index[0], index[1], index[2])) { return; }
+    int cellIndex = get1DIndexFrom3DIndex(index[0], index[1], index[2]);
     
+    // TODO: Add convection term
+//    waterGrid[cellIndex].currVelocity[1] = -1;
     
 }
+
+kernel void applyExternalForces(device Cell* waterGrid [[ buffer(2) ]],
+                                uint3 index [[ thread_position_in_grid ]]) {
+    if (!isInBounds(index[0], index[1], index[2])) { return; }
+    int cellIndex = get1DIndexFrom3DIndex(index[0], index[1], index[2]);
+    
+    // TODO: Add external forces term
+//    waterGrid[cellIndex].currVelocity[1] = -1;
+}
+
+kernel void applyViscosity(device Cell* waterGrid [[ buffer(2) ]],
+                           uint3 index [[ thread_position_in_grid ]]) {
+    if (!isInBounds(index[0], index[1], index[2])) { return; }
+    int cellIndex = get1DIndexFrom3DIndex(index[0], index[1], index[2]);
+    
+    // TODO: Add viscosity term
+//    waterGrid[cellIndex].currVelocity[1] = -1;
+}
+
+kernel void applyVorticityConfinement(device Cell* waterGrid [[ buffer(2) ]],
+                                      uint3 index [[ thread_position_in_grid ]]) {
+    if (!isInBounds(index[0], index[1], index[2])) { return; }
+    int cellIndex = get1DIndexFrom3DIndex(index[0], index[1], index[2]);
+    
+    // TODO: Add vorticity confinement term
+//    waterGrid[cellIndex].currVelocity[1] = -1;
+}
+
 
 /// Updates the particle positions
 kernel void updateParticles(device Particle* particleArray [[ buffer(0) ]],

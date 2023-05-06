@@ -29,7 +29,7 @@ class System {
     func initWaterGrid() {
         let totalCells = WATERGRID_X * WATERGRID_Y * WATERGRID_Z
         for _ in 0..<totalCells {
-            self.waterGrid.append(Cell(oldVelocity: [0, 0, 0], currVelocity: [0, -1, 0], curl: [0, 0, 0]))
+            self.waterGrid.append(Cell(oldVelocity: [0, 0, 0], currVelocity: [0, 0, 0], curl: [0, 0, 0]))
         }
     }
     
