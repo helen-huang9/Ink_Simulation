@@ -13,8 +13,11 @@ using namespace metal;
 constant int WATERGRID_X = 15;
 constant int WATERGRID_Y = 15;
 constant int WATERGRID_Z = 15;
+
 constant float TIMESTEP = 0.01;
+
 constant vector_float3 GRAVITY = vector_float3(0, -10, 0);
+constant float VISCOSITY = 1.0016;
 
 struct Fragment {
     float4 position [[ position ]];
@@ -207,6 +210,34 @@ kernel void applyExternalForces(const device Particle* particles [[ buffer(0) ]]
     }
 }
 
+float laplacianOperatorOnVelocity(device Cell* waterGrid, int i, int j, int k, int idx) {
+    float laplacianVelocity = 0;
+
+    // i direction
+    int cellIndex = get1DIndexFrom3DIndex(i+1, j, k);
+    laplacianVelocity += (i+1 < WATERGRID_X) ? waterGrid[cellIndex].currVelocity[idx] : 0;
+    cellIndex = get1DIndexFrom3DIndex(i-1, j, k);
+    laplacianVelocity += (i-1 >= 0         ) ? waterGrid[cellIndex].currVelocity[idx] : 0;
+
+    // j direction
+    cellIndex = get1DIndexFrom3DIndex(i, j+1, k);
+    laplacianVelocity += (j+1 < WATERGRID_Y) ? waterGrid[cellIndex].currVelocity[idx] : 0;
+    cellIndex = get1DIndexFrom3DIndex(i, j-1, k);
+    laplacianVelocity += (j-1 >= 0         ) ? waterGrid[cellIndex].currVelocity[idx] : 0;
+
+    // k direction
+    cellIndex = get1DIndexFrom3DIndex(i, j, k+1);
+    laplacianVelocity += (k+1 < WATERGRID_Z) ? waterGrid[cellIndex].currVelocity[idx] : 0;
+    cellIndex = get1DIndexFrom3DIndex(i, j, k-1);
+    laplacianVelocity += (k-1 >= 0         ) ? waterGrid[cellIndex].currVelocity[idx] : 0;
+
+    // -6*currCellCurrVelocity term
+    cellIndex = get1DIndexFrom3DIndex(i, j, k);
+    laplacianVelocity -= 6 * waterGrid[cellIndex].currVelocity[idx];
+
+    return laplacianVelocity;
+}
+
 kernel void applyViscosity(device Cell* waterGrid [[ buffer(2) ]],
                            uint3 tid [[ thread_position_in_grid ]]) {
     if (!isInBounds(tid[0], tid[1], tid[2])) { return; }
@@ -215,8 +246,14 @@ kernel void applyViscosity(device Cell* waterGrid [[ buffer(2) ]],
     // Reset forceWasApplied term from previous applyExternalForces() call
     waterGrid[cellIndex].forceWasApplied = 0;
     
-    // TODO: Add viscosity term
-//    waterGrid[cellIndex].currVelocity[1] = -1;
+    // Apply viscosity term
+    int i = tid[0];
+    int j = tid[1];
+    int k = tid[2];
+    float u_x = laplacianOperatorOnVelocity(waterGrid, i, j, k, 0);
+    float u_y = laplacianOperatorOnVelocity(waterGrid, i, j, k, 1);
+    float u_z = laplacianOperatorOnVelocity(waterGrid, i, j, k, 2);
+    waterGrid[cellIndex].currVelocity += TIMESTEP * VISCOSITY * vector_float3(u_x, u_y, u_z);
 }
 
 kernel void applyVorticityConfinement(device Cell* waterGrid [[ buffer(2) ]],

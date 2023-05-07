@@ -176,6 +176,7 @@ class Renderer: NSObject, MTKViewDelegate {
         
         // Done with encoding everything; commit command buffer
         commandBuffer?.commit()
+        commandBuffer?.waitUntilCompleted()
     }
     
 }
