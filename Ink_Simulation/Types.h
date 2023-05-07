@@ -12,6 +12,7 @@
 
 struct Particle {
     vector_float3 position;
+    vector_float3 velocity;
     vector_float4 color;
 };
 

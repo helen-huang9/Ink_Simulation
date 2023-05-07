@@ -14,7 +14,7 @@ constant int WATERGRID_X = 15;
 constant int WATERGRID_Y = 15;
 constant int WATERGRID_Z = 15;
 
-constant float TIMESTEP = 0.01;
+constant float TIMESTEP = 0.02;
 
 constant vector_float3 GRAVITY = vector_float3(0, -10, 0);
 constant float VISCOSITY = 1.0016;
@@ -26,7 +26,8 @@ struct Fragment {
 };
 
 int get1DIndexFrom3DIndex(int i, int j, int k) {
-    return i + WATERGRID_X * (j + WATERGRID_Y * j);
+//    return i + WATERGRID_X * (j + WATERGRID_Y * k);
+    return i + WATERGRID_X * (k + WATERGRID_Z * j);
 }
 
 bool isInBounds(int i, int j, int k) {
@@ -286,7 +287,8 @@ kernel void updateParticles(device Particle* particleArray [[ buffer(0) ]],
         // TODO: Change to use Midpoint Method
         int cellIndex = get1DIndexFrom3DIndex(i, j, k);
         vector_float3 v = waterGrid[cellIndex].currVelocity;
-        p.position += TIMESTEP * v; // TODO: currently hardcoding particle timestep
+        p.velocity += TIMESTEP * v;
+        p.position += TIMESTEP * p.velocity;
         particleArray[tid] = p;
     }
 }

@@ -10,7 +10,7 @@ import MetalKit
 let WATERGRID_X = 15
 let WATERGRID_Y = 15
 let WATERGRID_Z = 15
-let TOTAL_PARTICLES = 10000
+let TOTAL_PARTICLES = 500
 
 class System {
     var camera: Camera
@@ -26,10 +26,26 @@ class System {
         initWaterGrid()
     }
     
+    func whirlPool(i: Int, j: Int, k: Int) -> vector_float3 {
+        let center = vector_float3(Float(WATERGRID_X/2), 0, Float(WATERGRID_Z/2))
+        var v = vector_float3(Float(i) - center[0], 0, Float(k) - center[2])
+        v = normalize(v)
+        var whirl = cross(vector_float3(0, 1, 0), v)
+        whirl.x += Float.random(in: -1...1)
+        whirl.y += Float.random(in: -1...1)
+        whirl.z += Float.random(in: -1...1)
+        return 4 * whirl
+    }
+    
     func initWaterGrid() {
-        let totalCells = WATERGRID_X * WATERGRID_Y * WATERGRID_Z
-        for _ in 0..<totalCells {
-            self.waterGrid.append(Cell(oldVelocity: [0, 0, 0], currVelocity: [0, 0, 0], curl: [0, 0, 0], forceWasApplied: 0))
+        for i in 0..<WATERGRID_X {
+            for j in 0..<WATERGRID_Y {
+                for k in 0..<WATERGRID_Z {
+                    let whirlPool = whirlPool(i: i, j: j, k: k)
+                    self.waterGrid.append(Cell(oldVelocity: whirlPool, currVelocity: whirlPool, curl: [0, 0, 0], forceWasApplied: 0))
+//                    self.waterGrid.append(Cell(oldVelocity: [0, 0, 0], currVelocity: [0, 0, 0], curl: [0, 0, 0], forceWasApplied: 0))
+                }
+            }
         }
     }
     
@@ -45,7 +61,7 @@ class System {
             let randPos = getRandPosInRange(minX: Float(WATERGRID_X/2)-1, maxX: Float(WATERGRID_X/2)+1,
                                             minY: Float(WATERGRID_Y)-0.1, maxY: Float(WATERGRID_Y)-0.1,
                                             minZ: Float(WATERGRID_Z/2)-1, maxZ: Float(WATERGRID_Z/2)+1)
-            self.particles.append(Particle(position: randPos, color: vector_float4(0, 0, 0, 1)))
+            self.particles.append(Particle(position: randPos, velocity: vector_float3(0, 0, 0), color: vector_float4(0, 0, 0, 1)))
         }
     }
     
