@@ -16,8 +16,9 @@ constant int WATERGRID_Z = 15;
 
 constant float TIMESTEP = 0.02;
 
-constant vector_float3 GRAVITY = vector_float3(0, -10, 0);
+constant vector_float3 GRAVITY = vector_float3(0, -5, 0);
 constant float VISCOSITY = 1.0016;
+constant float K_VORT = 1;
 
 struct Fragment {
     float4 position [[ position ]];
@@ -26,8 +27,7 @@ struct Fragment {
 };
 
 int get1DIndexFrom3DIndex(int i, int j, int k) {
-//    return i + WATERGRID_X * (j + WATERGRID_Y * k);
-    return i + WATERGRID_X * (k + WATERGRID_Z * j);
+    return i + WATERGRID_X * (j + WATERGRID_Y * k);
 }
 
 bool isInBounds(int i, int j, int k) {
@@ -137,8 +137,6 @@ kernel void applyConvection(device Cell* waterGrid [[ buffer(2) ]],
     // Set the cell's currVelocity
     int cellIndex = get1DIndexFrom3DIndex(tid[0], tid[1], tid[2]);
     waterGrid[cellIndex].currVelocity = newVelocity;
-    
-    // TODO: Calculate curl
 }
 
 kernel void applyExternalForces(const device Particle* particles [[ buffer(0) ]],
@@ -239,6 +237,48 @@ float laplacianOperatorOnVelocity(device Cell* waterGrid, int i, int j, int k, i
     return laplacianVelocity;
 }
 
+vector_float3 calculateCurl(device Cell* waterGrid, int i, int j, int k) {
+    vector_float3 curl(0, 0, 0);
+    
+    /// uz / y
+    curl[0] += (j+1 < WATERGRID_Y) ? waterGrid[get1DIndexFrom3DIndex(i, j+1, k)].oldVelocity[2] : 0;
+    curl[0] -= (j-1 >= 0         ) ? waterGrid[get1DIndexFrom3DIndex(i, j-1, k)].oldVelocity[2] : 0;
+    /// uy / z
+    curl[0] -= (k+1 < WATERGRID_Z) ? waterGrid[get1DIndexFrom3DIndex(i, j, k+1)].oldVelocity[1] : 0;
+    curl[0] += (k-1 >= 0         ) ? waterGrid[get1DIndexFrom3DIndex(i, j, k-1)].oldVelocity[1] : 0;
+
+    /// ux / z
+    curl[1] += (k+1 < WATERGRID_Z) ? waterGrid[get1DIndexFrom3DIndex(i, j, k+1)].oldVelocity[0] : 0;
+    curl[1] -= (k-1 >= 0         ) ? waterGrid[get1DIndexFrom3DIndex(i, j, k-1)].oldVelocity[0] : 0;
+    /// uz / x
+    curl[1] -= (i+1 < WATERGRID_X) ? waterGrid[get1DIndexFrom3DIndex(i+1, j, k)].oldVelocity[2] : 0;
+    curl[1] += (i-1 >= 0         ) ? waterGrid[get1DIndexFrom3DIndex(i-1, j, k)].oldVelocity[2] : 0;
+
+    /// uy / x
+    curl[2] += (i+1 < WATERGRID_X) ? waterGrid[get1DIndexFrom3DIndex(i+1, j, k)].oldVelocity[1] : 0;
+    curl[2] -= (i-1 >= 0         ) ? waterGrid[get1DIndexFrom3DIndex(i-1, j, k)].oldVelocity[1] : 0;
+    /// ux / y
+    curl[2] -= (j+1 < WATERGRID_Y) ? waterGrid[get1DIndexFrom3DIndex(i, j+1, k)].oldVelocity[0] : 0;
+    curl[2] += (j-1 >= 0         ) ? waterGrid[get1DIndexFrom3DIndex(i, j-1, k)].oldVelocity[0] : 0;
+
+    return curl;
+}
+
+float calculateNorm(vector_float3 v) {
+    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+
+vector_float3 getCurlGradient(device Cell* waterGrid, int i, int j, int k){
+    vector_float3 gradient(0, 0, 0);
+    gradient[0] += (i+1 < WATERGRID_X) ? calculateNorm(waterGrid[get1DIndexFrom3DIndex(i, j+1, k)].curl) : 0;
+    gradient[0] -= (i-1 >= 0         ) ? calculateNorm(waterGrid[get1DIndexFrom3DIndex(i-1, j, k)].curl) : 0;
+    gradient[1] += (j+1 < WATERGRID_Y) ? calculateNorm(waterGrid[get1DIndexFrom3DIndex(i, j+1, k)].curl) : 0;
+    gradient[1] -= (j-1 >= 0         ) ? calculateNorm(waterGrid[get1DIndexFrom3DIndex(i, j-1, k)].curl) : 0;
+    gradient[2] += (k+1 < WATERGRID_Z) ? calculateNorm(waterGrid[get1DIndexFrom3DIndex(i, j, k+1)].curl) : 0;
+    gradient[2] += (k-1 < WATERGRID_Z) ? calculateNorm(waterGrid[get1DIndexFrom3DIndex(i, j, k-1)].curl) : 0;
+    return gradient;
+}
+
 kernel void applyViscosity(device Cell* waterGrid [[ buffer(2) ]],
                            uint3 tid [[ thread_position_in_grid ]]) {
     if (!isInBounds(tid[0], tid[1], tid[2])) { return; }
@@ -255,6 +295,9 @@ kernel void applyViscosity(device Cell* waterGrid [[ buffer(2) ]],
     float u_y = laplacianOperatorOnVelocity(waterGrid, i, j, k, 1);
     float u_z = laplacianOperatorOnVelocity(waterGrid, i, j, k, 2);
     waterGrid[cellIndex].currVelocity += TIMESTEP * VISCOSITY * vector_float3(u_x, u_y, u_z);
+    
+    // Calculate Curl
+    waterGrid[cellIndex].curl = calculateCurl(waterGrid, tid[0], tid[1], tid[2]);
 }
 
 kernel void applyVorticityConfinement(device Cell* waterGrid [[ buffer(2) ]],
@@ -262,8 +305,13 @@ kernel void applyVorticityConfinement(device Cell* waterGrid [[ buffer(2) ]],
     if (!isInBounds(tid[0], tid[1], tid[2])) { return; }
     int cellIndex = get1DIndexFrom3DIndex(tid[0], tid[1], tid[2]);
     
-    // TODO: Add vorticity confinement term
-    
+    // Apply vorticity confinement term
+    vector_float3 curl = waterGrid[cellIndex].curl;
+    if (curl[0] > 0 || curl[1] > 0 || curl[2] > 0) {
+        vector_float3 N = getCurlGradient(waterGrid, tid[0], tid[1], tid[2]) / calculateNorm(curl);
+        vector_float3 F_vort = K_VORT * cross(N, curl);
+        waterGrid[cellIndex].currVelocity += TIMESTEP * F_vort;
+    }
     
     // Make oldVelocity be currVelocity
     waterGrid[cellIndex].oldVelocity = waterGrid[cellIndex].currVelocity;
