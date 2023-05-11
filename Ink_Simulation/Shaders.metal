@@ -37,7 +37,7 @@ bool isInBounds(int i, int j, int k) {
     return inXRange && inYRange && inZRange;
 }
 
-float getInterpolatedValue(device Cell* waterGrid, float x, float y, float z, int idx) {
+float getInterpolatedValue(device Cell* waterGrid, float x, float y, float z, int idx, int useNew) {
     int i = int(x);
     int j = int(y);
     int k = int(z);
@@ -47,49 +47,81 @@ float getInterpolatedValue(device Cell* waterGrid, float x, float y, float z, in
     
     if (isInBounds(i, j, k)) {
         int cellIndex = get1DIndexFrom3DIndex(i, j, k);
-        totalAccum  += (i + 1 - x) * (j + 1 - y) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (i + 1 - x) * (j + 1 - y) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (i + 1 - x) * (j + 1 - y) * (k + 1 - z) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (i + 1 - x) * (j + 1 - y) * (k + 1 - z);
 
     if (isInBounds(i + 1, j, k)) {
         int cellIndex = get1DIndexFrom3DIndex(i + 1, j, k);
-        totalAccum  += (x - i) * (j + 1 - y) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (x - i) * (j + 1 - y) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (x - i) * (j + 1 - y) * (k + 1 - z) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (x - i) * (j + 1 - y) * (k + 1 - z);
 
     if (isInBounds(i, j + 1, k)) {
         int cellIndex = get1DIndexFrom3DIndex(i, j + 1, k);
-        totalAccum  += (i + 1 - x) * (y - j) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (i + 1 - x) * (y - j) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (i + 1 - x) * (y - j) * (k + 1 - z) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (i + 1 - x) * (y - j) * (k + 1 - z);
 
     if (isInBounds(i + 1, j + 1, k)) {
         int cellIndex = get1DIndexFrom3DIndex(i + 1, j + 1, k);
-        totalAccum  += (x - i) * (y - j) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (x - i) * (y - j) * (k + 1 - z) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (x - i) * (y - j) * (k + 1 - z) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (x - i) * (y - j) * (k + 1 - z);
 
     if (isInBounds(i, j, k + 1)) {
         int cellIndex = get1DIndexFrom3DIndex(i, j, k + 1);
-        totalAccum  += (i + 1 - x) * (j + 1 - y) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (i + 1 - x) * (j + 1 - y) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (i + 1 - x) * (j + 1 - y) * (z - k) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (i + 1 - x) * (j + 1 - y) * (z - k);
 
     if (isInBounds(i + 1, j, k + 1)) {
         int cellIndex = get1DIndexFrom3DIndex(i + 1, j, k + 1);
-        totalAccum += (x - i) * (j + 1 - y) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum += (x - i) * (j + 1 - y) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum += (x - i) * (j + 1 - y) * (z - k) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (x - i) * (j + 1 - y) * (z - k);
 
     if (isInBounds(i, j + 1, k + 1)) {
         int cellIndex = get1DIndexFrom3DIndex(i, j + 1, k + 1);
-        totalAccum  += (i + 1 - x) * (y - j) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (i + 1 - x) * (y - j) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (i + 1 - x) * (y - j) * (z - k) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (i + 1 - x) * (y - j) * (z - k);
 
     if (isInBounds(i + 1, j + 1, k + 1)) {
         int cellIndex = get1DIndexFrom3DIndex(i + 1, j + 1, k + 1);
-        totalAccum  += (x - i) * (y - j) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        if (useNew == 0) {
+            totalAccum  += (x - i) * (y - j) * (z - k) * waterGrid[cellIndex].oldVelocity[idx];
+        } else {
+            totalAccum  += (x - i) * (y - j) * (z - k) * waterGrid[cellIndex].currVelocity[idx];
+        }
     }
     weightAccum += (x - i) * (y - j) * (z - k);
 
@@ -99,10 +131,10 @@ float getInterpolatedValue(device Cell* waterGrid, float x, float y, float z, in
     return totalAccum / weightAccum;
 }
 
-vector_float3 getVelocity(device Cell* waterGrid, float x, float y, float z) {
-    float newX = getInterpolatedValue(waterGrid, x, y - 0.5, z - 0.5, 0);
-    float newY = getInterpolatedValue(waterGrid, x - 0.5, y, z - 0.5, 1);
-    float newZ = getInterpolatedValue(waterGrid, x - 0.5, y - 0.5, z, 2);
+vector_float3 getVelocity(device Cell* waterGrid, float x, float y, float z, int useNew) {
+    float newX = getInterpolatedValue(waterGrid, x, y - 0.5, z - 0.5, 0, useNew);
+    float newY = getInterpolatedValue(waterGrid, x - 0.5, y, z - 0.5, 1, useNew);
+    float newZ = getInterpolatedValue(waterGrid, x - 0.5, y - 0.5, z, 2, useNew);
     return vector_float3(newX, newY, newZ);
 }
 
@@ -111,8 +143,8 @@ vector_float3 getVelocity(device Cell* waterGrid, float x, float y, float z) {
  Returns the position of the particle after performing the particle trace
  */
 vector_float3 traceParticle(device Cell* waterGrid, float x, float y, float z, float t) {
-    vector_float3 vel = getVelocity(waterGrid, x, y, z);
-    vel = getVelocity(waterGrid, x + 0.5*TIMESTEP*vel[0], y + 0.5*TIMESTEP*vel[1], z + 0.5*TIMESTEP*vel[2]);
+    vector_float3 vel = getVelocity(waterGrid, x, y, z, 0);
+    vel = getVelocity(waterGrid, x + 0.5*TIMESTEP*vel[0], y + 0.5*TIMESTEP*vel[1], z + 0.5*TIMESTEP*vel[2], 0);
     return vector_float3(x, y, z) + vel;
 }
 
@@ -320,21 +352,22 @@ kernel void applyVorticityConfinement(device Cell* waterGrid [[ buffer(2) ]],
 
 /// Updates the particle positions
 kernel void updateParticles(device Particle* particleArray [[ buffer(0) ]],
-                            const device Cell* waterGrid [[ buffer(2) ]],
+                            device Cell* waterGrid [[ buffer(2) ]],
                             uint tid [[ thread_position_in_grid ]]) {
     // Get the particle
     Particle p = particleArray[tid];
     
     // Get the cell the particle is in
-    int i = p.position.x;
-    int j = p.position.y;
-    int k = p.position.z;
+    int i = p.position[0];
+    int j = p.position[1];
+    int k = p.position[2];
     
     // Update the particle if its in bounds
     if (isInBounds(i, j, k)) {
         // TODO: Change to use Midpoint Method
-        int cellIndex = get1DIndexFrom3DIndex(i, j, k);
-        vector_float3 v = waterGrid[cellIndex].currVelocity;
+//        int cellIndex = get1DIndexFrom3DIndex(i, j, k);
+//        vector_float3 v = waterGrid[cellIndex].currVelocity;
+        vector_float3 v = getVelocity(waterGrid, p.position[0], p.position[1], p.position[2], 1);
         p.velocity += TIMESTEP * v;
         p.position += TIMESTEP * p.velocity;
         particleArray[tid] = p;
